@@ -11,6 +11,9 @@ const userSchema = new Schema({
     type: String,
     required: true
   },
+  // It will save generate String for reset password and expiration date
+  resetToken: String,
+  resetTokenExpiration: Date,
   cart: {
     items: [
       {

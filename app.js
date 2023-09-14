@@ -64,8 +64,6 @@ app.use(authRoutes);
 
 app.use(errorController.get404);
 
-
-
 mongoose
   .connect(MONGODB_URI,{
     useNewUrlParser: true,
@@ -76,4 +74,4 @@ mongoose
   })
   .catch(err => {
     console.log(err);
-  });
+});
