@@ -173,12 +173,104 @@ body('password',"Please Enter a valid Password at least 5 characters")
 .isAlphanumeric()
 </code>
 
+<h3>Async Validation</h3>
 
+<p>
+It means that when a user is already send a req for a signup then he do not signup again with the same email he or she get error msg so therefore we will do some changes in auth routes instead of controller auth
+</p>
+
+Route code
+<code>
+router.post(
+    '/signup',
+    [
+      check('email')
+        .isEmail()
+        .withMessage('Please enter a valid email.')
+        .custom((value, { req }) => {
+          // if (value === 'test@test.com') {
+          //   throw new Error('This email address if forbidden.');
+          // }
+          // return true;
+          return User.findOne({ email: value }).then(userDoc => {
+            if (userDoc) {
+              return Promise.reject(
+                'E-Mail exists already, please pick a different one.'
+              );
+            }
+          });
+        }),
+      body(
+        'password',
+        'Please enter a password with only numbers and text and at least 5 characters.'
+      )
+        .isLength({ min: 5 })
+        .isAlphanumeric(),
+      body('confirmPassword').custom((value, { req }) => {
+        if (value !== req.body.password) {
+          throw new Error('Passwords have to match!');
+        }
+        return true;
+      })
+    ],
+    authController.postSignup
+  );
+</code>
+
+Controller code
+<code>
+exports.postSignup = (req, res, next) => {
+  const email = req.body.email;
+  const password = req.body.password;
+
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    console.log(errors.array());
+    return res.status(422).render('auth/signup', {
+      path: '/signup',
+      pageTitle: 'Signup',
+      errorMessage: errors.array()[0].msg
+    });
+  }
+
+  bcrypt
+    .hash(password, 12)
+    .then(hashedPassword => {
+      const user = new User({
+        email: email,
+        password: hashedPassword,
+        cart: { items: [] }
+      });
+      return user.save();
+    })
+    .then(result => {
+      res.redirect('/login');
+      // return transporter.sendMail({
+      //   to: email,
+      //   from: 'shop@node-complete.com',
+      //   subject: 'Signup succeeded!',
+      //   html: '<h1>You successfully signed up!</h1>'
+      // });
+    })
+    .catch(err => {
+      console.log(err);
+    });
+};
+</code>
+
+
+<h3>Uploading and Downloading files</h3>
+
+<p>
+
+</p>
+Important Note: If you want to create a pdf then visit pdfkit website which is third party package will help you to create pdf in node server
 </p>
 
 
+<h2> Adding Pagination </h2>
 
-
+<p></p>
 
 
 

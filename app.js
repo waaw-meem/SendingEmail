@@ -1,5 +1,5 @@
 const path = require('path');
-
+const multer = require('multer');
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
@@ -16,7 +16,7 @@ const MONGODB_URI =
 const app = express();
 const store = new MongoDBStore({
   uri: MONGODB_URI,
-  collection: 'sessions'
+  collection: 'sessions',
 });
 const csrfProtection = csrf();
 
@@ -27,14 +27,40 @@ const adminRoutes = require('./routes/admin');
 const shopRoutes = require('./routes/shop');
 const authRoutes = require('./routes/auth');
 
+const fileStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'images');
+  },
+  filename: (req, file, cb) => {
+    const timestamp = new Date().toISOString().replace(/:/g, '-');
+    cb(null, timestamp + '-' + file.originalname);
+  },
+});
+
+const fileFilter = (req, file, cb) => {
+  if (
+    file.mimetype === 'image/png' ||
+    file.mimetype === 'image/jpg' ||
+    file.mimetype === 'image/jpeg'
+  ) {
+    cb(null, true);
+  } else {
+    cb(null, false);
+  }
+};
+
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use(
+  multer({ storage: fileStorage, fileFilter: fileFilter }).single('image')
+);
+app.use('/images', express.static(path.join(__dirname, 'images')));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(
   session({
     secret: 'my secret',
     resave: false,
     saveUninitialized: false,
-    store: store
+    store: store,
   })
 );
 app.use(csrfProtection);
@@ -45,11 +71,11 @@ app.use((req, res, next) => {
     return next();
   }
   User.findById(req.session.user._id)
-    .then(user => {
+    .then((user) => {
       req.user = user;
       next();
     })
-    .catch(err => console.log(err));
+    .catch((err) => console.log(err));
 });
 
 app.use((req, res, next) => {
@@ -65,13 +91,13 @@ app.use(authRoutes);
 app.use(errorController.get404);
 
 mongoose
-  .connect(MONGODB_URI,{
+  .connect(MONGODB_URI, {
     useNewUrlParser: true,
-     useUnifiedTopology: true 
+    useUnifiedTopology: true,
   })
-  .then(result => {
+  .then((result) => {
     app.listen(3000);
   })
-  .catch(err => {
+  .catch((err) => {
     console.log(err);
-});
+  });
